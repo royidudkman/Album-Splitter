@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Album Splitter</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h1>Album Splitter</h1>
+    <span style="color: red;">Every line in the text should have the start time and the song name. nothing else!</span>
+    <form id="uploadForm" method="POST" enctype="multipart/form-data">
+        <input type="file" name="file" accept=".mp3" required>
+        <br>
+        <textarea name="album_info" placeholder="Enter album information..." rows="10" required></textarea>
+        <br>
+        <input type="submit" value="Split Album">
+    </form>
+    <br>
+    <div id="progressContainer" style="display: none;">
+        <p id="progressText">Processing...</p>
+        <progress id="progressBar" value="0" max="100"></progress>
+    </div>
+    <br>
+    <div id="resultContainer"></div>
+
+    <script>
+        $(document).ready(function () {
+            $("#uploadForm").submit(function (event) {
+                event.preventDefault();
+
+                var formData = new FormData(this);
+
+                $("#uploadForm").hide();
+                $("#progressContainer").show();
+
+                $.ajax({
+                    url: "/upload",
+                    type: "POST",
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    xhr: function () {
+                        var xhr = new window.XMLHttpRequest();
+                        xhr.upload.addEventListener("progress", function (evt) {
+                            if (evt.lengthComputable) {
+                                var percentComplete = (evt.loaded / evt.total) * 100;
+                                $("#progressBar").val(percentComplete);
+                            }
+                        }, false);
+                        return xhr;
+                    },
+                    success: function (response) {
+                        if (response.error) {
+                            $("#progressText").text("Error: " + response.error);
+                        } else if (response.success) {
+                            $("#progressText").text("Album split successfully");
+                        }
+                        $("#resultContainer").text(JSON.stringify(response));
+                    },
+                    error: function (xhr, status, error) {
+                        $("#progressText").text("Error: " + error);
+                        $("#resultContainer").text(xhr.responseText);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
